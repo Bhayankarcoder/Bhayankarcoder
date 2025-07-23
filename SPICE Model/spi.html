@@ -1,0 +1,553 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interactive Memristor SPICE Model Explorer</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap" rel="stylesheet">
+    <!-- Chosen Palette: "Academic Neutral" -->
+    <!-- Application Structure Plan: The SPA is designed as a narrative journey to make a complex topic accessible. It starts with a broad introduction (What is a memristor?), moves to fundamentals (How it works physically and mathematically), then to the core interactive "Simulation Sandbox" where users can experiment. This is followed by a "Model Showdown" to highlight the paper's key critique, and ends with a conclusion. This thematic flow, rather than mirroring the paper's structure, guides the user from basic concepts to complex analysis, maximizing understanding and engagement. Key interactions include sliders for simulation parameters and model selection buttons, allowing for direct cause-and-effect learning. -->
+    <!-- Visualization & Content Choices: 
+        - Physical Model: Goal: Inform. Method: HTML/CSS diagram. Interaction: None. Justification: A simple, clear visual is sufficient to explain the TiO2 structure. No SVG/Mermaid used.
+        - Mathematical Model: Goal: Inform/Explore. Method: HTML with dynamic text output. Interaction: Sliders for R_ON, R_OFF, x. Justification: Allows users to build intuition for the core memristance equation by seeing the result change instantly.
+        - Simulation Sandbox: Goal: Compare/Analyze. Method: Two linked Chart.js line charts. Interaction: Sliders for voltage, frequency, and 'p' parameter; buttons to switch models. Justification: This is the core of the paper. Linked charts for I-V and state 'x' directly visualize the device dynamics. User control over parameters allows them to replicate the paper's findings (e.g., shrinking hysteresis loops) and understand the models' behavior under different conditions. Library: Chart.js (Canvas). NO SVG/Mermaid used.
+        - Model Showdown: Goal: Compare/Critique. Method: Side-by-side text and a targeted simulation. Interaction: Button to run a specific "state-locking" simulation. Justification: Directly addresses the paper's central argument by demonstrating the Joglekar model's flaw and explaining the proposed solution's benefit in a clear, comparative format.
+    -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .bg-warm-gray-50 { background-color: #F9FAFB; }
+        .bg-warm-gray-100 { background-color: #F3F4F6; }
+        .bg-warm-gray-200 { background-color: #E5E7EB; }
+        .text-warm-gray-800 { color: #1F2937; }
+        .text-warm-gray-600 { color: #4B5563; }
+        .text-indigo-600 { color: #4F46E5; }
+        .border-warm-gray-200 { border-color: #E5E7EB; }
+        .btn {
+            padding: 0.5rem 1rem;
+            border-radius: 0.5rem;
+            font-weight: 500;
+            transition: all 0.2s ease-in-out;
+            cursor: pointer;
+        }
+        .btn-primary {
+            background-color: #4F46E5;
+            color: white;
+        }
+        .btn-primary:hover {
+            background-color: #4338CA;
+        }
+        .btn-secondary {
+            background-color: #E5E7EB;
+            color: #1F2937;
+        }
+        .btn-secondary:hover {
+            background-color: #D1D5DB;
+        }
+        .btn-active {
+            background-color: #3730A3;
+            color: white;
+        }
+        .chart-container {
+            position: relative;
+            width: 100%;
+            max-width: 600px;
+            margin-left: auto;
+            margin-right: auto;
+            height: 300px;
+            max-height: 40vh;
+        }
+        @media (min-width: 768px) {
+            .chart-container {
+                height: 350px;
+            }
+        }
+        .section {
+            display: none;
+        }
+        .section.active {
+            display: block;
+        }
+        .katex-display {
+            display: block;
+            margin: 1em 0;
+            text-align: center;
+        }
+        .katex {
+            font-size: 1.1em;
+        }
+    </style>
+</head>
+<body class="bg-warm-gray-50 text-warm-gray-800">
+
+    <div class="container mx-auto p-4 md:p-8 max-w-7xl">
+
+        <header class="text-center mb-12">
+            <h1 class="text-4xl md:text-5xl font-bold text-indigo-600">The Memristor SPICE Model</h1>
+            <p class="mt-4 text-lg text-warm-gray-600 max-w-3xl mx-auto">An interactive exploration of the 2009 Biolek et al. paper on modeling the fourth fundamental circuit element.</p>
+        </header>
+
+        <nav class="flex justify-center flex-wrap gap-2 mb-12">
+            <button class="btn btn-primary nav-btn" data-target="intro">Introduction</button>
+            <button class="btn btn-secondary nav-btn" data-target="physical">Physical Model</button>
+            <button class="btn btn-secondary nav-btn" data-target="math">Mathematical Model</button>
+            <button class="btn btn-secondary nav-btn" data-target="sandbox">Simulation Sandbox</button>
+            <button class="btn btn-secondary nav-btn" data-target="showdown">Model Showdown</button>
+            <button class="btn btn-secondary nav-btn" data-target="conclusion">Conclusion</button>
+        </nav>
+
+        <main>
+            <section id="intro" class="section active space-y-6">
+                <div class="bg-white p-8 rounded-lg shadow-md border border-warm-gray-200">
+                    <h2 class="text-2xl font-bold mb-4">The "Missing" Fourth Element</h2>
+                    <p class="text-warm-gray-600 leading-relaxed">In 1971, Prof. Leon Chua theorized the existence of a fourth fundamental passive circuit element, the "memristor," which would link charge and magnetic flux. For decades, it remained a theoretical curiosity. In 2008, a team at HP Labs announced they had built one, opening the door to revolutionary new computer memories and brain-like computing architectures. However, with physical devices unavailable, researchers needed a way to study them. This application explores the influential 2009 paper by Biolek et al. that provided a critical SPICE simulation model, allowing the field to move forward.</p>
+                    <p class="text-warm-gray-600 leading-relaxed mt-4">This interactive tool will guide you through the paper's key concepts. You will learn how a memristor works, explore its mathematical foundations, and run your own simulations to see the challenges and subtleties of modeling its behavior. Use the navigation above to begin your exploration.</p>
+                </div>
+            </section>
+
+            <section id="physical" class="section space-y-6">
+                 <div class="bg-white p-8 rounded-lg shadow-md border border-warm-gray-200">
+                    <h2 class="text-2xl font-bold mb-4">Physical Model: A TiO₂ Sandwich</h2>
+                    <p class="text-warm-gray-600 leading-relaxed mb-6">The HP memristor's structure is a thin film of titanium dioxide (TiO₂) between two platinum contacts. This film has two layers: one is pure TiO₂, an insulator, and the other is doped with oxygen vacancies, making it a semiconductor. The device's memory effect comes from moving the boundary between these two layers.</p>
+                    <div class="w-full max-w-lg mx-auto bg-warm-gray-100 p-6 rounded-lg">
+                        <div class="flex flex-col items-center text-center">
+                            <div class="w-full bg-gray-300 rounded-t-md p-2 font-semibold">Platinum Contact (+)</div>
+                            <div class="w-full flex" style="height: 120px;">
+                                <div id="undoped-region-viz" class="bg-blue-200 flex items-center justify-center transition-all duration-500" style="width: 50%;">
+                                    <span class="text-sm font-medium text-blue-800">Undoped TiO₂ (Insulator)</span>
+                                </div>
+                                <div id="doped-region-viz" class="bg-purple-200 flex items-center justify-center transition-all duration-500" style="width: 50%;">
+                                    <span class="text-sm font-medium text-purple-800">Doped TiO₂ (Semiconductor)</span>
+                                </div>
+                            </div>
+                            <div class="w-full bg-gray-300 rounded-b-md p-2 font-semibold">Platinum Contact (-)</div>
+                        </div>
+                        <p class="text-center mt-4 text-sm text-warm-gray-600">When current flows, the boundary between the doped (width <span class="font-mono font-bold">w</span>) and undoped regions moves, changing the device's total resistance.</p>
+                    </div>
+                </div>
+            </section>
+
+            <section id="math" class="section space-y-6">
+                <div class="bg-white p-8 rounded-lg shadow-md border border-warm-gray-200">
+                    <h2 class="text-2xl font-bold mb-4">The Governing Equations</h2>
+                    <p class="text-warm-gray-600 leading-relaxed mb-6">The memristor's behavior is described by two key equations. The first defines its total resistance (memristance) based on the width of the doped region. The second, the state equation, describes how that width changes over time in response to current.</p>
+                    
+                    <div class="grid md:grid-cols-2 gap-8">
+                        <div class="bg-warm-gray-100 p-6 rounded-lg">
+                            <h3 class="font-bold text-lg mb-2">1. Memristance Equation</h3>
+                            <p class="text-sm text-warm-gray-600 mb-4">The total resistance is a mix of the low resistance of the doped region ($R_{ON}$) and the high resistance of the undoped region ($R_{OFF}$). The normalized width of the doped region, $x = w/D$, controls the mix.</p>
+                            <div class="text-center font-mono text-lg p-4 bg-white rounded-md my-4">R<sub>MEM</sub> = R<sub>ON</sub> * x + R<sub>OFF</sub> * (1 - x)</div>
+                            
+                            <div class="space-y-4 text-sm">
+                                <div>
+                                    <label for="ron-slider" class="font-medium">R<sub>ON</sub>: <span id="ron-val">100</span> Ω</label>
+                                    <input id="ron-slider" type="range" min="100" max="1000" value="100" step="50" class="w-full">
+                                </div>
+                                <div>
+                                    <label for="roff-slider" class="font-medium">R<sub>OFF</sub>: <span id="roff-val">16000</span> Ω</label>
+                                    <input id="roff-slider" type="range" min="1000" max="20000" value="16000" step="1000" class="w-full">
+                                </div>
+                                <div>
+                                    <label for="x-slider" class="font-medium">State (x): <span id="x-val">0.5</span></label>
+                                    <input id="x-slider" type="range" min="0" max="1" value="0.5" step="0.01" class="w-full">
+                                </div>
+                            </div>
+                            <div class="mt-6 text-center">
+                                <span class="text-lg font-bold">Calculated R<sub>MEM</sub>:</span>
+                                <span id="memristance-output" class="text-lg font-bold text-indigo-600">8050.00 Ω</span>
+                            </div>
+                        </div>
+
+                        <div class="bg-warm-gray-100 p-6 rounded-lg">
+                            <h3 class="font-bold text-lg mb-2">2. State Equation</h3>
+                            <p class="text-sm text-warm-gray-600 mb-4">The rate of change of the state variable $x$ is proportional to the current $i(t)$. This is where the device's memory comes from—its state depends on the history of the current.</p>
+                            <div class="text-center font-mono text-lg p-4 bg-white rounded-md my-4">dx/dt = k * i(t) * f(x)</div>
+                            <p class="text-sm text-warm-gray-600">The term $f(x)$ is a "window function" that models nonlinear effects, especially at the boundaries (when $x$ is near 0 or 1). This function is crucial and is the main focus of the "Simulation Sandbox" and "Model Showdown" sections.</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section id="sandbox" class="section space-y-6">
+                <div class="bg-white p-8 rounded-lg shadow-md border border-warm-gray-200">
+                    <h2 class="text-2xl font-bold mb-4">Simulation Sandbox</h2>
+                    <p class="text-warm-gray-600 leading-relaxed mb-6">Here you can run your own simulations of the memristor model. Apply a sinusoidal voltage and observe the results. Pay attention to the "pinched hysteresis loop" in the Voltage vs. Current graph—the classic signature of a memristor. See how changing the frequency, voltage, and window function model affects the device's behavior.</p>
+                    
+                    <div class="grid md:grid-cols-3 gap-6 mb-8 p-4 bg-warm-gray-100 rounded-lg">
+                        <div class="space-y-2">
+                            <label for="sim-voltage" class="font-medium text-sm">Voltage Amplitude: <span id="sim-voltage-val">1.2</span> V</label>
+                            <input id="sim-voltage" type="range" min="0.1" max="3" value="1.2" step="0.1" class="w-full">
+                        </div>
+                        <div class="space-y-2">
+                            <label for="sim-freq" class="font-medium text-sm">Frequency: <span id="sim-freq-val">1</span> Hz</label>
+                            <input id="sim-freq" type="range" min="0.2" max="5" value="1" step="0.1" class="w-full">
+                        </div>
+                        <div class="space-y-2">
+                            <label for="sim-p" class="font-medium text-sm">Window 'p' Param: <span id="sim-p-val">1</span></label>
+                            <input id="sim-p" type="range" min="1" max="10" value="1" step="1" class="w-full">
+                        </div>
+                        <div class="md:col-span-3 flex justify-center items-center gap-4 mt-4">
+                             <div class="flex flex-col items-center">
+                                <span class="font-medium text-sm mb-2">Window Function Model</span>
+                                <div>
+                                    <button id="model-joglekar" class="btn btn-active">Joglekar</button>
+                                    <button id="model-biolek" class="btn btn-secondary">Biolek (Proposed)</button>
+                                </div>
+                            </div>
+                            <button id="run-sim" class="btn btn-primary">Run Simulation</button>
+                        </div>
+                    </div>
+
+                    <div id="sim-results" class="grid lg:grid-cols-2 gap-8">
+                        <div>
+                            <h3 class="text-lg font-semibold text-center mb-2">Voltage vs. Current</h3>
+                            <div class="chart-container bg-warm-gray-100 rounded-lg p-2">
+                                <canvas id="iv-chart"></canvas>
+                            </div>
+                            <p id="iv-desc" class="text-center text-sm mt-2 text-warm-gray-600">The area of the loop represents energy dissipated per cycle. Notice how it shrinks at higher frequencies.</p>
+                        </div>
+                        <div>
+                            <h3 class="text-lg font-semibold text-center mb-2">State Variable (x) vs. Time</h3>
+                            <div class="chart-container bg-warm-gray-100 rounded-lg p-2">
+                                <canvas id="state-chart"></canvas>
+                            </div>
+                            <p class="text-center text-sm mt-2 text-warm-gray-600">This shows the internal memory of the device changing over time.</p>
+                        </div>
+                    </div>
+                     <div id="sim-loading" class="text-center py-10 hidden">
+                        <p class="text-indigo-600 font-semibold">Running simulation...</p>
+                    </div>
+                </div>
+            </section>
+
+            <section id="showdown" class="section space-y-6">
+                <div class="bg-white p-8 rounded-lg shadow-md border border-warm-gray-200">
+                    <h2 class="text-2xl font-bold mb-4">Model Showdown: The "Pending Issue"</h2>
+                    <p class="text-warm-gray-600 leading-relaxed mb-6">The paper's most critical contribution was identifying a major flaw in the standard Joglekar window function. While mathematically convenient, it leads to physically unrealistic behavior. This section demonstrates the problem and the paper's proposed solution.</p>
+                    
+                    <div class="grid md:grid-cols-2 gap-8">
+                        <div class="bg-red-50 p-6 rounded-lg border border-red-200">
+                            <h3 class="font-bold text-lg mb-2 text-red-800">The Flaw: Joglekar's Model</h3>
+                            <div class="text-center font-mono text-base p-2 bg-white rounded-md my-4">f(x) = 1 - (2x - 1)<sup>2p</sup></div>
+                            <p class="text-sm text-red-700 mb-4">Because this function is zero at both boundaries (x=0 and x=1), if the device state reaches either end, it becomes permanently locked. The rate of change `dx/dt` becomes zero, and the model predicts the memristor can never be switched back. This is physically implausible for a memory device.</p>
+                        </div>
+
+                        <div class="bg-green-50 p-6 rounded-lg border border-green-200">
+                            <h3 class="font-bold text-lg mb-2 text-green-800">The Solution: Biolek's Model</h3>
+                            <div class="text-center font-mono text-base p-2 bg-white rounded-md my-4">f(x, i) = 1 - (x - stp(-i))<sup>2p</sup></div>
+                            <p class="text-sm text-green-700 mb-4">The proposed solution makes the window function dependent on the direction of the current `i`. This asymmetrical function only forces the drift to zero at the boundary being approached. This allows the state to "retreat" immediately when the current is reversed, solving the locking problem and creating a more realistic model.</p>
+                        </div>
+                    </div>
+                    <div class="mt-8 text-center">
+                         <button id="run-lock-sim" class="btn btn-primary">Demonstrate State Locking</button>
+                         <div id="lock-sim-results" class="mt-4 hidden">
+                            <p id="lock-sim-desc" class="text-warm-gray-600 max-w-2xl mx-auto"></p>
+                         </div>
+                    </div>
+                </div>
+            </section>
+            
+            <section id="conclusion" class="section space-y-6">
+                 <div class="bg-white p-8 rounded-lg shadow-md border border-warm-gray-200">
+                    <h2 class="text-2xl font-bold mb-4">Conclusion & Impact</h2>
+                    <div class="space-y-4 text-warm-gray-600 leading-relaxed">
+                        <p>The 2009 Biolek et al. paper was more than just a piece of code; it was a crucial contribution at a pivotal moment. By providing a functional, open, and portable SPICE model, it democratized memristor research, allowing scientists and engineers worldwide to explore this new technology without needing access to proprietary hardware.</p>
+                        <p>More importantly, the paper provided an incisive critique of existing models. By identifying the physically unrealistic "state locking" flaw in the Joglekar window function and proposing a more plausible, current-dependent alternative, the authors advanced the science of memristor modeling. They highlighted the complex trade-offs between mathematical elegance and physical reality.</p>
+                        <p>Their work underscored that a single, simple model was likely insufficient to capture all of the device's complex behaviors. The "open model" philosophy was a forward-thinking approach, creating a foundation that the research community could build upon as the understanding of memristor physics continued to evolve. This paper stands as a prime example of how practical engineering tools and sharp theoretical analysis can work together to accelerate scientific progress.</p>
+                    </div>
+                </div>
+            </section>
+        </main>
+
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const navButtons = document.querySelectorAll('.nav-btn');
+            const sections = document.querySelectorAll('.section');
+
+            navButtons.forEach(button => {
+                button.addEventListener('click', () => {
+                    const targetId = button.dataset.target;
+
+                    sections.forEach(section => {
+                        section.classList.remove('active');
+                        if (section.id === targetId) {
+                            section.classList.add('active');
+                        }
+                    });
+
+                    navButtons.forEach(btn => {
+                        btn.classList.remove('btn-primary', 'btn-active');
+                        btn.classList.add('btn-secondary');
+                    });
+                    button.classList.add('btn-primary', 'btn-active');
+                    button.classList.remove('btn-secondary');
+                });
+            });
+
+            const ronSlider = document.getElementById('ron-slider');
+            const roffSlider = document.getElementById('roff-slider');
+            const xSlider = document.getElementById('x-slider');
+            const ronVal = document.getElementById('ron-val');
+            const roffVal = document.getElementById('roff-val');
+            const xVal = document.getElementById('x-val');
+            const memristanceOutput = document.getElementById('memristance-output');
+            const dopedRegionViz = document.getElementById('doped-region-viz');
+            const undopedRegionViz = document.getElementById('undoped-region-viz');
+
+            function updateMemristance() {
+                const ron = parseFloat(ronSlider.value);
+                const roff = parseFloat(roffSlider.value);
+                const x = parseFloat(xSlider.value);
+                const memristance = ron * x + roff * (1 - x);
+
+                ronVal.textContent = ron;
+                roffVal.textContent = roff;
+                xVal.textContent = x.toFixed(2);
+                memristanceOutput.textContent = `${memristance.toFixed(2)} Ω`;
+
+                dopedRegionViz.style.width = `${x * 100}%`;
+                undopedRegionViz.style.width = `${(1 - x) * 100}%`;
+            }
+
+            [ronSlider, roffSlider, xSlider].forEach(slider => {
+                slider.addEventListener('input', updateMemristance);
+            });
+            updateMemristance();
+
+            let ivChart, stateChart;
+            const simVoltageSlider = document.getElementById('sim-voltage');
+            const simFreqSlider = document.getElementById('sim-freq');
+            const simPSlider = document.getElementById('sim-p');
+            const simVoltageVal = document.getElementById('sim-voltage-val');
+            const simFreqVal = document.getElementById('sim-freq-val');
+            const simPVal = document.getElementById('sim-p-val');
+            const runSimBtn = document.getElementById('run-sim');
+            const modelJoglekarBtn = document.getElementById('model-joglekar');
+            const modelBiolekBtn = document.getElementById('model-biolek');
+            const simResultsDiv = document.getElementById('sim-results');
+            const simLoadingDiv = document.getElementById('sim-loading');
+            const ivDesc = document.getElementById('iv-desc');
+
+            let currentModel = 'joglekar';
+
+            modelJoglekarBtn.addEventListener('click', () => {
+                currentModel = 'joglekar';
+                modelJoglekarBtn.classList.add('btn-active');
+                modelJoglekarBtn.classList.remove('btn-secondary');
+                modelBiolekBtn.classList.remove('btn-active');
+                modelBiolekBtn.classList.add('btn-secondary');
+            });
+
+            modelBiolekBtn.addEventListener('click', () => {
+                currentModel = 'biolek';
+                modelBiolekBtn.classList.add('btn-active');
+                modelBiolekBtn.classList.remove('btn-secondary');
+                modelJoglekarBtn.classList.remove('btn-active');
+                modelJoglekarBtn.classList.add('btn-secondary');
+            });
+            
+            [simVoltageSlider, simFreqSlider, simPSlider].forEach(slider => {
+                slider.addEventListener('input', () => {
+                    simVoltageVal.textContent = parseFloat(simVoltageSlider.value).toFixed(1);
+                    simFreqVal.textContent = parseFloat(simFreqSlider.value).toFixed(1);
+                    simPVal.textContent = simPSlider.value;
+                });
+            });
+
+            function runSimulation(params) {
+                const {
+                    V0, freq, p, model, R_on, R_off, D, uv, x0, duration, steps
+                } = params;
+
+                const k = uv * R_on / (D * D);
+                const dt = duration / steps;
+                const omega = 2 * Math.PI * freq;
+
+                let x = x0;
+                const results = {
+                    time: [],
+                    voltage: [],
+                    current: [],
+                    state: []
+                };
+
+                for (let i = 0; i <= steps; i++) {
+                    const t = i * dt;
+                    const v = V0 * Math.sin(omega * t);
+                    const R_mem = R_on * x + R_off * (1 - x);
+                    const current = v / R_mem;
+
+                    let fx;
+                    if (model === 'joglekar') {
+                        fx = 1 - Math.pow(2 * x - 1, 2 * p);
+                    } else { // biolek model
+                        const stp_neg_i = current < 0 ? 1 : 0;
+                        fx = 1 - Math.pow(x - stp_neg_i, 2 * p);
+                    }
+                    
+                    const dxdt = k * current * fx;
+                    x += dxdt * dt;
+
+                    if (x > 1) x = 1;
+                    if (x < 0) x = 0;
+
+                    results.time.push(t);
+                    results.voltage.push(v);
+                    results.current.push(current);
+                    results.state.push(x);
+                }
+                return results;
+            }
+
+            function plotResults(simData) {
+                const ivCtx = document.getElementById('iv-chart').getContext('2d');
+                const stateCtx = document.getElementById('state-chart').getContext('2d');
+
+                if (ivChart) ivChart.destroy();
+                if (stateChart) stateChart.destroy();
+                
+                const ivData = simData.voltage.map((v, i) => ({ x: v, y: simData.current[i] }));
+
+                ivChart = new Chart(ivCtx, {
+                    type: 'scatter',
+                    data: {
+                        datasets: [{
+                            label: 'I-V Curve',
+                            data: ivData,
+                            borderColor: '#4F46E5',
+                            backgroundColor: 'rgba(79, 70, 229, 0.5)',
+                            showLine: true,
+                            pointRadius: 0,
+                            borderWidth: 2
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: {
+                            x: {
+                                type: 'linear',
+                                position: 'bottom',
+                                title: { display: true, text: 'Voltage (V)' }
+                            },
+                            y: {
+                                title: { display: true, text: 'Current (A)' }
+                            }
+                        },
+                        plugins: {
+                            legend: { display: false },
+                            tooltip: {
+                                callbacks: {
+                                    label: function(context) {
+                                        return `V: ${context.parsed.x.toFixed(3)}, I: ${context.parsed.y.toExponential(2)}`;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                });
+
+                stateChart = new Chart(stateCtx, {
+                    type: 'line',
+                    data: {
+                        labels: simData.time,
+                        datasets: [{
+                            label: 'State (x)',
+                            data: simData.state,
+                            borderColor: '#10B981',
+                            backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                            fill: true,
+                            pointRadius: 0,
+                            borderWidth: 2
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: {
+                            x: {
+                                title: { display: true, text: 'Time (s)' }
+                            },
+                            y: {
+                                title: { display: true, text: 'State variable (x)' },
+                                min: 0,
+                                max: 1
+                            }
+                        },
+                         plugins: {
+                            legend: { display: false }
+                        }
+                    }
+                });
+            }
+
+            runSimBtn.addEventListener('click', () => {
+                simLoadingDiv.classList.remove('hidden');
+                simResultsDiv.classList.add('hidden');
+
+                setTimeout(() => {
+                    const params = {
+                        V0: parseFloat(simVoltageSlider.value),
+                        freq: parseFloat(simFreqSlider.value),
+                        p: parseInt(simPSlider.value),
+                        model: currentModel,
+                        R_on: 100,
+                        R_off: 16e3,
+                        D: 10e-9,
+                        uv: 1e-14,
+                        x0: 0.5,
+                        duration: 2 / parseFloat(simFreqSlider.value),
+                        steps: 2000
+                    };
+                    const simData = runSimulation(params);
+                    plotResults(simData);
+                    simLoadingDiv.classList.add('hidden');
+                    simResultsDiv.classList.remove('hidden');
+                    
+                    if(params.freq > 2.5) {
+                        ivDesc.textContent = "At higher frequencies, the state variable 'x' has less time to change, causing the hysteresis loop to shrink significantly.";
+                    } else if (params.V0 < 0.5) {
+                        ivDesc.textContent = "With low voltage, the current is small and the state changes very little, resulting in an almost linear (resistor-like) I-V curve.";
+                    } else {
+                        ivDesc.textContent = "The area of the loop represents energy dissipated per cycle. Notice how it shrinks at higher frequencies.";
+                    }
+
+                }, 100);
+            });
+            
+            runSimBtn.click();
+            
+            const runLockSimBtn = document.getElementById('run-lock-sim');
+            const lockSimResultsDiv = document.getElementById('lock-sim-results');
+            const lockSimDesc = document.getElementById('lock-sim-desc');
+
+            runLockSimBtn.addEventListener('click', () => {
+                lockSimDesc.textContent = "Simulating Joglekar model with high voltage to drive state to boundary...";
+                lockSimResultsDiv.classList.remove('hidden');
+
+                setTimeout(() => {
+                    const params = {
+                        V0: 3.0, freq: 0.5, p: 1, model: 'joglekar',
+                        R_on: 100, R_off: 16e3, D: 10e-9, uv: 1e-14, x0: 0.1,
+                        duration: 2, steps: 1000
+                    };
+                    const simData = runSimulation(params);
+                    const finalState = simData.state[simData.state.length - 1];
+
+                    if (finalState >= 0.999) {
+                         lockSimDesc.innerHTML = `<span class="font-bold text-red-600">Result: State Locked!</span> The simulation drove the state variable x to ${finalState.toFixed(4)}. With the Joglekar model, dx/dt is now zero, and the memristor is stuck. Re-running the simulation with the Biolek model would show the state immediately retreating when the voltage reverses.`;
+                    } else {
+                        lockSimDesc.textContent = `Simulation complete. The final state is ${finalState.toFixed(4)}. Try increasing voltage or duration to see the locking effect.`;
+                    }
+                }, 100);
+            });
+        });
+    </script>
+</body>
+</html>
