@@ -1,8 +1,8 @@
 - 👋 Hi, I’m @Bhayankarcoder
 - 👀 I’m interested in Learning 
 - 🌱 I’m currently learning Web-dev
-- 💞️ I’m looking to collaborate on ...
-- 📫 How to reach me 
+- 💞️ I’m also doing DSA thora thora 
+- 📫 How to reach me insta :- ali_ahmad0704 or mail - aliahmeddav123@gmail.com
 - 😄 Pronouns: He/him
 - ⚡ Fun fact: I am very lazy but I dream of being workaholic.
 
