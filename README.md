@@ -5,8 +5,8 @@
 - 😄 Pronouns: He/him
 - ⚡ Fun fact: I am very lazy but I dream of being workaholic.
 - 💞️ I’m also doing DSA thora thora
-so far I have learnt about Arrays, Linked List, Stacks, Queue and Recursion
-Right now I'm learning about Dynamic Programing and Tree
+so far I have learnt about Arrays, Linked List, Stacks, Queue, Recursion and DP
+Right now I'm learning about Graph and Tree
 
 <!---
 Bhayankarcoder/Bhayankarcoder is a ✨ special ✨ repository because its `README.md` (this file) appears on your GitHub profile.
