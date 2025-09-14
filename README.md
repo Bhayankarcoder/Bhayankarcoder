@@ -32,6 +32,17 @@
 ![Canva](https://img.shields.io/badge/Canva-00C4CC?style=for-the-badge&logo=canva&logoColor=white)  
 
 
+## 📚 DSA Progress  
+
+**Current Topics:**  
+![Arrays](https://img.shields.io/badge/Arrays-Progress-brightgreen?style=for-the-badge)  
+![Linked List](https://img.shields.io/badge/Linked%20List-Learning-blue?style=for-the-badge)  
+![Stacks & Queues](https://img.shields.io/badge/Stacks%20&%20Queues-Ongoing-orange?style=for-the-badge)  
+![Recursion](https://img.shields.io/badge/Recursion-Done-green?style=for-the-badge)  
+![Dynamic Programming](https://img.shields.io/badge/DP-Learning-yellow?style=for-the-badge)  
+![Graphs & Trees](https://img.shields.io/badge/Graphs%20&%20Trees-In%20Progress-red?style=for-the-badge)  
+
+
 
 ---
 
