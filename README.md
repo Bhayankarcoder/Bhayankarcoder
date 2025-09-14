@@ -31,9 +31,10 @@
 ![MATLAB](https://img.shields.io/badge/MATLAB-FF4500?style=for-the-badge&logo=mathworks&logoColor=white)  
 ![Canva](https://img.shields.io/badge/Canva-00C4CC?style=for-the-badge&logo=canva&logoColor=white)  
 
+---
 
-## 📚 DSA Progress  
-![LeetCode Badges](https://leetcode-badge-showcase.vercel.app/api?username=eUenlAKOJd&animated=true)
+
+## 📚 DSA Progress 
 
 **Current Topics:**  
 ![Arrays](https://img.shields.io/badge/Arrays-Progress-brightgreen?style=for-the-badge)  
@@ -44,6 +45,14 @@
 ![Graphs & Trees](https://img.shields.io/badge/Graphs%20&%20Trees-In%20Progress-red?style=for-the-badge)  
 
 
+
+---
+
+## 🏆 LeetCode Stats  
+
+**Profile:** [eUenlAKOJd](https://leetcode.com/u/eUenlAKOJd/)  
+
+![LeetCode Badges](https://leetcode-badge-showcase.vercel.app/api?username=eUenlAKOJd&theme=dark&animated=true)  
 
 ---
 
