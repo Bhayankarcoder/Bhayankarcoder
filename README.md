@@ -33,6 +33,7 @@
 
 
 ## 📚 DSA Progress  
+![LeetCode Badges](https://leetcode-badge-showcase.vercel.app/api?username=eUenlAKOJd&animated=true)
 
 **Current Topics:**  
 ![Arrays](https://img.shields.io/badge/Arrays-Progress-brightgreen?style=for-the-badge)  
